@@ -95,7 +95,7 @@ def parse_status(homework):
 def main():
     """Основная логика работы бота."""
     if not check_tokens():
-        logging.critical(
+        logger.critical(
             "Отсутствует обязательная переменная окружения! "
             "Программа принудительно остановлена."
         )
@@ -105,46 +105,39 @@ def main():
         vk_session = vk_api.VkApi(token=VK_TOKEN)
         vk = vk_session.get_api()
     except Exception as error:
-        logging.critical(f"Ошибка инициализации VK API: {error}")
+        logger.critical(f"Ошибка инициализации VK API: {error}")
         sys.exit(f"Не удалось запустить VK сессию: {error}")
 
     timestamp = int(time.time())
-
     last_error = ""
 
     while True:
         try:
             response = get_api_answer(timestamp)
-
             check_response(response)
-
             homeworks = response.get("homeworks")
 
             if homeworks:
                 message = parse_status(homeworks[0])
                 send_message(vk, message)
             else:
-                logging.debug("Отсутствие в ответе новых статусов.")
+                logger.debug("Отсутствие в ответе новых статусов.")
 
             timestamp = response.get("current_date", timestamp)
-
             last_error = ""
 
         except Exception as error:
             message = f"Сбой в работе программы: {error}"
-            logging.error(message)
+            logger.error(message)
 
             if message != last_error:
                 try:
                     send_message(vk, message)
                     last_error = message
                 except Exception as vk_err:
-                    logging.error(
-                        f"Не удалось отправить отчет об ошибке в VK: {vk_err}"
-                    )
+                    logger.error(f"Не удалось отправить отчет об ошибке в VK: {vk_err}")
 
-        finally:
-            time.sleep(RETRY_PERIOD)
+        time.sleep(RETRY_PERIOD)
 
 
 if __name__ == "__main__":
