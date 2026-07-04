@@ -1,10 +1,11 @@
-import os
-from dotenv import load_dotenv
-import requests
 import logging
+import os
 import sys
 import time
+
+import requests
 import vk_api
+from dotenv import load_dotenv
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -33,7 +34,7 @@ HOMEWORK_VERDICTS = {
 
 
 def check_tokens():
-    """Функция для проверки наличия необходимых данных"""
+    """Функция для проверки наличия необходимых данных."""
     return all([PRACTICUM_TOKEN, VK_TOKEN, VK_USER_ID])
 
 
@@ -48,13 +49,12 @@ def send_message(vk, message):
 
 
 def get_api_answer(timestamp):
-    """Функция для получения ответа от сервера и обработка ошибок"""
+    """Функция для получения ответа от сервера и обработка ошибок."""
     params = {"from_date": timestamp}
     try:
-        print(f"DEBUG ОТПРАВКИ: URL={ENDPOINT}, HEADERS={HEADERS}, PARAMS={params}")
         response = requests.get(ENDPOINT, params=params, headers=HEADERS)
-    except requests.RequestException as error:
-        raise ConnectionError(f"ошибка при отправке запроса к API")
+    except requests.RequestException:
+        raise ConnectionError("ошибка при отправке запроса к API")
 
     if response.status_code != 200:
         raise ValueError(f"Эндпоинт недоступен. Код ошибки {response.status_code}")
@@ -75,7 +75,6 @@ def check_response(response):
 
 def parse_status(homework):
     """Извлекает из информации о домашней работе её статус."""
-
     if "homework_name" not in homework:
         raise ValueError('В ответе API отсутствует ключ "homework_name"')
 
@@ -92,6 +91,16 @@ def parse_status(homework):
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
 
+def init_vk_api():
+    """Инициализирует сессию VK API."""
+    try:
+        vk_session = vk_api.VkApi(token=VK_TOKEN)
+        return vk_session.get_api()
+    except Exception as error:
+        logger.critical(f"Ошибка инициализации VK API: {error}")
+        sys.exit(f"Не удалось запустить VK сессию: {error}")
+
+
 def main():
     """Основная логика работы бота."""
     if not check_tokens():
@@ -101,13 +110,7 @@ def main():
         )
         sys.exit("Критическая ошибка: проверьте переменные окружения.")
 
-    try:
-        vk_session = vk_api.VkApi(token=VK_TOKEN)
-        vk = vk_session.get_api()
-    except Exception as error:
-        logger.critical(f"Ошибка инициализации VK API: {error}")
-        sys.exit(f"Не удалось запустить VK сессию: {error}")
-
+    vk = init_vk_api()
     timestamp = int(time.time())
     last_error = ""
 
