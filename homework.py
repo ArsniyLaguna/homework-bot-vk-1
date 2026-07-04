@@ -57,7 +57,9 @@ def get_api_answer(timestamp):
         raise ConnectionError("ошибка при отправке запроса к API")
 
     if response.status_code != 200:
-        raise ValueError(f"Эндпоинт недоступен. Код {response.status_code}")
+        raise ValueError(
+            f"Эндпоинт недоступен. Код ошибки {response.status_code}"
+        )
 
     return response.json()
 
@@ -91,26 +93,18 @@ def parse_status(homework):
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
 
-def init_vk_api():
-    """Инициализирует сессию VK API."""
-    try:
-        vk_session = vk_api.VkApi(token=VK_TOKEN)
-        return vk_session.get_api()
-    except Exception as error:
-        logger.critical(f"Ошибка инициализации VK API: {error}")
-        sys.exit(f"Не удалось запустить VK сессию: {error}")
-
-
 def main():
     """Основная логика работы бота."""
     if not check_tokens():
         logger.critical(
-            "Отсутствует обязательная переменная окружения! "
+            "Отсутствует обязательная переменная окружения"
             "Программа принудительно остановлена."
         )
         sys.exit("Критическая ошибка: проверьте переменные окружения.")
 
-    vk = init_vk_api()
+    vk_session = vk_api.VkApi(token=VK_TOKEN)
+    vk = vk_session.get_api()
+
     timestamp = int(time.time())
     last_error = ""
 
@@ -138,7 +132,9 @@ def main():
                     send_message(vk, message)
                     last_error = message
                 except Exception as vk_err:
-                    logger.error(f"Ошибка при отправке: {vk_err}")
+                    logger.error(
+                        f"Не удалось отправить отчет: {vk_err}"
+                    )
 
         time.sleep(RETRY_PERIOD)
 
