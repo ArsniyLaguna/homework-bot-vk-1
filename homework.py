@@ -57,7 +57,7 @@ def get_api_answer(timestamp):
         raise ConnectionError("ошибка при отправке запроса к API")
 
     if response.status_code != 200:
-        raise ValueError(f"Эндпоинт недоступен. Код ошибки {response.status_code}")
+        raise ValueError(f"Эндпоинт недоступен. Код {response.status_code}")
 
     return response.json()
 
@@ -138,7 +138,7 @@ def main():
                     send_message(vk, message)
                     last_error = message
                 except Exception as vk_err:
-                    logger.error(f"Не удалось отправить отчет об ошибке в VK: {vk_err}")
+                    logger.error(f"Ошибка при отправке: {vk_err}")
 
         time.sleep(RETRY_PERIOD)
 
