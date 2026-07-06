@@ -2,16 +2,11 @@ import logging
 import os
 import sys
 import time
+from http import HTTPStatus
 
 import requests
 import vk_api
 from dotenv import load_dotenv
-
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[logging.StreamHandler(sys.stdout)],
-)
 
 logger = logging.getLogger(__name__)
 load_dotenv()
@@ -35,6 +30,14 @@ HOMEWORK_VERDICTS = {
 
 def check_tokens():
     """Функция для проверки наличия необходимых данных."""
+    tokens = [
+        'PRACTICUM_TOKEN',
+        'VK_TOKEN',
+        'VK_USER_ID',
+    ]
+    for token in tokens:
+        if not globals().get(token):
+            logger.critical(f"Отсутствует переменная окружения: {token}")
     return all([PRACTICUM_TOKEN, VK_TOKEN, VK_USER_ID])
 
 
@@ -56,7 +59,7 @@ def get_api_answer(timestamp):
     except requests.RequestException:
         raise ConnectionError("ошибка при отправке запроса к API")
 
-    if response.status_code != 200:
+    if response.status_code != HTTPStatus.OK:
         raise ValueError(
             f"Эндпоинт недоступен. Код ошибки {response.status_code}"
         )
@@ -97,7 +100,7 @@ def main():
     """Основная логика работы бота."""
     if not check_tokens():
         logger.critical(
-            "Отсутствует обязательная переменная окружения"
+            "Отсутствует обязательная переменная окружения! "
             "Программа принудительно остановлена."
         )
         sys.exit("Критическая ошибка: проверьте переменные окружения.")
@@ -133,11 +136,16 @@ def main():
                     last_error = message
                 except Exception as vk_err:
                     logger.error(
-                        f"Не удалось отправить отчет: {vk_err}"
+                        f"Не удалось отправить отчет об ошибке в VK: {vk_err}"
                     )
 
         time.sleep(RETRY_PERIOD)
 
 
 if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(asctime)s - %(levelname)s -  %(message)s - %(lineno)s",
+        handlers=[logging.StreamHandler(sys.stdout)],
+    )
     main()
